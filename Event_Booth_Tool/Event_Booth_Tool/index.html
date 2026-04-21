@@ -997,10 +997,6 @@
       <input type="text" id="f-name" placeholder="e.g. Rahul Sharma" required>
     </div>
     <div class="form-group">
-      <label>Work Email *</label>
-      <input type="email" id="f-email" placeholder="you@company.com" required>
-    </div>
-    <div class="form-group">
       <label>Designation / Role *</label>
       <input type="text" id="f-designation" placeholder="e.g. Head of Logistics">
     </div>
@@ -1403,22 +1399,17 @@
     // ========== LEAD FORM ==========
     function startQuestions() {
       const name = document.getElementById('f-name').value.trim();
-      const email = document.getElementById('f-email').value.trim();
       const desg = document.getElementById('f-designation').value.trim();
       const comp = document.getElementById('f-company').value.trim();
-      if (!name || !email || !desg || !comp) {
+      if (!name || !desg || !comp) {
         alert('Please fill in all required fields.');
-        return;
-      }
-      // Basic email format check
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        alert('Please enter a valid email address.');
         return;
       }
       currentQ = 0;
       renderQuestion();
       showScreen('questions');
     }
+
     // ========== QUESTIONS ==========
     function renderQuestion() {
       const q = QUESTIONS[currentQ];
@@ -1678,7 +1669,6 @@
       const keyRec = RECS[weakestIdx];
       const payload = {
         full_name: document.getElementById('f-name').value.trim(),
-        email: document.getElementById('f-email').value.trim(),
         designation: document.getElementById('f-designation').value.trim(),
         company_name: document.getElementById('f-company').value.trim(),
         contact_number: document.getElementById('f-phone').value.trim() || null,
@@ -1844,7 +1834,6 @@
       currentQ = 0;
       answers = {};
       document.getElementById('f-name').value = '';
-      document.getElementById('f-email').value = '';
       document.getElementById('f-designation').value = '';
       document.getElementById('f-company').value = '';
       document.getElementById('f-phone').value = '';

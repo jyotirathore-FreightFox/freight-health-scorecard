@@ -7,7 +7,7 @@ Tofler Pro lookup uses Playwright (headless browser) to:
   2. Log in with Pro credentials (from ../.env)
   3. Scrape exact revenue, DSO, DPO, ITO from the company page
 """
-import certifi
+
 import asyncio
 import json
 import os
@@ -541,7 +541,7 @@ def _compute_icp(data: dict) -> bool:
 # HubSpot integration
 # ---------------------------------------------------------------------------
 def _send_to_hubspot(entry: dict) -> dict:
-    """Push full assessment data to HubSpot. Creates new contact, or updates existing."""
+    """Push full assessment data to HubSpot as a Contact."""
     if not HUBSPOT_ACCESS_TOKEN:
         return {"status": "skipped", "reason": "no token configured"}
 
@@ -565,7 +565,6 @@ def _send_to_hubspot(entry: dict) -> dict:
 
     properties = {
         # Standard HubSpot contact fields
-        "email":     entry.get("email") or "",
         "firstname": first_name,
         "lastname":  last_name,
         "jobtitle":  entry.get("designation") or "",
@@ -600,80 +599,23 @@ def _send_to_hubspot(entry: dict) -> dict:
     # Strip None/empty values (HubSpot rejects some nulls)
     properties = {k: v for k, v in properties.items() if v is not None and v != ""}
 
-    headers = {
-        "Authorization": f"Bearer {HUBSPOT_ACCESS_TOKEN}",
-        "Content-Type": "application/json",
-    }
-
     try:
-        # First, try to create the contact
         resp = requests.post(
             "https://api.hubapi.com/crm/v3/objects/contacts",
-            headers=headers,
+            headers={
+                "Authorization": f"Bearer {HUBSPOT_ACCESS_TOKEN}",
+                "Content-Type": "application/json",
+            },
             json={"properties": properties},
             timeout=10,
-            verify=certifi.where()
         )
-
         if resp.status_code in (200, 201):
             return {"status": "created", "id": resp.json().get("id")}
-
-        # Duplicate → extract existing contact ID and update instead
         if resp.status_code == 409:
-            error_body = resp.json()
-            existing_id = None
-
-            # Try to pull the ID out of the error message
-            msg = error_body.get("message", "")
-            match = re.search(r"Existing ID:\s*(\d+)", msg)
-            if match:
-                existing_id = match.group(1)
-
-            # Fallback: search by email directly
-            if not existing_id and properties.get("email"):
-                search_resp = requests.post(
-                    "https://api.hubapi.com/crm/v3/objects/contacts/search",
-                    headers=headers,
-                    json={
-                        "filterGroups": [{
-                            "filters": [{
-                                "propertyName": "email",
-                                "operator": "EQ",
-                                "value": properties["email"],
-                            }]
-                        }],
-                        "limit": 1,
-                    },
-                    timeout=10,
-                )
-                if search_resp.status_code == 200:
-                    results = search_resp.json().get("results", [])
-                    if results:
-                        existing_id = results[0].get("id")
-
-            if not existing_id:
-                return {"status": "duplicate_unresolved", "detail": error_body}
-
-            # PATCH the existing contact with new assessment data
-            update_resp = requests.patch(
-                f"https://api.hubapi.com/crm/v3/objects/contacts/{existing_id}",
-                headers=headers,
-                json={"properties": properties},
-                timeout=10,
-            )
-
-            if update_resp.status_code in (200, 201):
-                return {"status": "updated", "id": existing_id}
-            return {
-                "status": "update_failed",
-                "code": update_resp.status_code,
-                "detail": update_resp.text[:300],
-            }
-
+            return {"status": "duplicate", "detail": resp.json()}
         return {"status": "error", "code": resp.status_code, "detail": resp.text[:300]}
     except Exception as e:
         return {"status": "exception", "error": str(e)}
-
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -791,7 +733,6 @@ async def company_snapshot(name: str = Query(..., min_length=1)):
 
 class AssessmentPayload(BaseModel):
     full_name: str
-    email: Optional[str] = None
     designation: str
     company_name: str
     contact_number: Optional[str] = None

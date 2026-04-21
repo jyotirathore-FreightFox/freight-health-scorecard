@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+.env
+*.pyc
+.DS_Store
+submissions.json
+company_cache.json
+test_hubspot.py
