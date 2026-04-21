@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=768, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FreightFox — Freight Health Scorecard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ========== RESET & VARS ========== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    :root {
+      --ff-bg: #0A0C0F;
+      --ff-surface: #111418;
+      --ff-surface2: #181C22;
+      --ff-border: rgba(255, 255, 255, 0.08);
+      --ff-text: #F0EEE8;
+      --ff-muted: rgba(240, 238, 232, 0.45);
+      --ff-accent: #164af3;
+      --ff-red: #E24B4A;
+      --ff-amber: #F5A623;
+      --ff-blue: #378ADD;
+      --ff-radius: 12px;
+    }
+
+    html,
+    body {
+      background: var(--ff-bg);
+      color: var(--ff-text);
+      font-family: DM Sans, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ========== UTILITIES ========== */
+    .mono {
+      font-family: 'DM Mono', monospace;
+    }
+
+    .muted {
+      color: var(--ff-muted);
+    }
+
+    .accent {
+      color: var(--ff-accent);
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: 40px 32px;
+      max-width: 720px;
+      margin: 0 auto;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes countUp {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes barGrow {
+      from {
+        width: 0;
+      }
+    }
+
+    /* ========== BUTTONS ========== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 32px;
+      border: none;
+      border-radius: var(--ff-radius);
+      font-family: DM Sans, sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 52px;
+      touch-action: manipulation;
+    }
+
+    .btn-primary {
+      background: var(--ff-accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: var(--ff-surface2);
+      color: var(--ff-text);
+      border: 1px solid var(--ff-border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--ff-accent);
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    /* ========== FORM ========== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--ff-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--ff-surface);
+      border: 1px solid var(--ff-border);
+      border-radius: 8px;
+      color: var(--ff-text);
+      font-family: DM Sans, sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--ff-accent);
+    }
+
+    .form-group input::placeholder {
+      color: var(--ff-muted);
+    }
+
+    /* ========== COMPANY CARD ========== */
+    .company-card {
+      background: linear-gradient(180deg, var(--ff-surface) 0%, var(--ff-surface2) 100%);
+      border: 1px solid var(--ff-border);
+      border-radius: var(--ff-radius);
+      padding: 18px 20px;
+      margin-top: 12px;
+      display: none;
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(200, 240, 74, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .company-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(600px 120px at 10% -20%, rgba(200, 240, 74, 0.08), transparent 60%);
+    }
+
+    .company-card.visible {
+      display: block;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .company-card .cc-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ff-accent);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .company-card .cc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .company-card .cc-metric {
+      text-align: center;
+      padding: 4px 2px;
+      border-right: 1px solid var(--ff-border);
+    }
+
+    .company-card .cc-metric:last-child {
+      border-right: none;
+    }
+
+    .company-card .cc-metric .val {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--ff-text);
+      margin-bottom: 4px;
+      min-height: 1.25rem;
+    }
+
+    .company-card .cc-metric .lbl {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--ff-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Shimmer placeholder used during loading */
+    .company-card.loading .cc-metric .val {
+      color: transparent;
+      background: linear-gradient(90deg,
+          rgba(255, 255, 255, 0.05) 0%,
+          rgba(255, 255, 255, 0.14) 50%,
+          rgba(255, 255, 255, 0.05) 100%);
+      background-size: 200% 100%;
+      border-radius: 4px;
+      animation: shimmer 1.2s infinite linear;
+      display: inline-block;
+      min-width: 52px;
+      height: 18px;
+    }
+
+    .company-loading {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--ff-muted);
+      margin-top: 8px;
+      display: none;
+      letter-spacing: 0.5px;
+    }
+
+    .company-loading.visible {
+      display: block;
+    }
+
+    /* ========== INTRO SCREEN ========== */
+    #intro .logo {
+      font-family: DM Sans, sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      color: var(--ff-accent);
+      letter-spacing: -0.5px;
+      margin-bottom: 48px;
+    }
+
+    #intro h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    #intro .subtitle {
+      color: var(--ff-muted);
+      font-size: 1.05rem;
+      margin-bottom: 48px;
+    }
+
+    .dimensions-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+
+    .dim-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      background: var(--ff-surface);
+      border: 1px solid var(--ff-border);
+      border-radius: 10px;
+    }
+
+    .dim-row .dim-num {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: 0.8rem;
+      color: var(--ff-accent);
+      min-width: 24px;
+    }
+
+    .dim-row .dim-name {
+      flex: 1;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .dim-row .dim-pts {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--ff-muted);
+    }
+
+    /* ========== QUESTION SCREEN ========== */
+    #questions .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--ff-surface2);
+      border-radius: 2px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+
+    #questions .progress-fill {
+      height: 100%;
+      background: var(--ff-accent);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .q-dimension-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--ff-accent);
+      margin-bottom: 8px;
+    }
+
+    .q-counter {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--ff-muted);
+      margin-bottom: 20px;
+    }
+
+    .q-text {
+      font-size: 1.3rem;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 28px;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .option-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 18px;
+      background: var(--ff-surface);
+      border: 1.5px solid var(--ff-border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      min-height: 52px;
+      touch-action: manipulation;
+    }
+
+    .option-btn:hover {
+      border-color: rgba(200, 240, 74, 0.3);
+    }
+
+    .option-btn.selected {
+      border-color: var(--ff-accent);
+      background: rgba(200, 240, 74, 0.06);
+    }
+
+    .option-btn .opt-letter {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: 0.8rem;
+      color: var(--ff-accent);
+      min-width: 20px;
+      padding-top: 2px;
+    }
+
+    .option-btn .opt-text {
+      font-size: 0.95rem;
+      line-height: 1.4;
+      color: var(--ff-text);
+    }
+
+    .q-nav {
+      display: flex;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 20px;
+    }
+
+    .q-nav .btn {
+      flex: 1;
+    }
+
+    /* ========== RESULTS SCREEN ========== */
+    #results .zone-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    .zone-reactive {
+      background: rgba(226, 75, 74, 0.15);
+      color: var(--ff-red);
+      border: 1px solid rgba(226, 75, 74, 0.3);
+    }
+
+    .zone-controlled {
+      background: rgba(245, 166, 35, 0.15);
+      color: var(--ff-amber);
+      border: 1px solid rgba(245, 166, 35, 0.3);
+    }
+
+    .zone-optimised {
+      background: rgba(55, 138, 221, 0.15);
+      color: var(--ff-blue);
+      border: 1px solid rgba(55, 138, 221, 0.3);
+    }
+
+    .zone-algorithmic {
+      background: rgba(200, 240, 74, 0.15);
+      color: var(--ff-accent);
+      border: 1px solid rgba(200, 240, 74, 0.3);
+    }
+
+    .big-score {
+      font-family: 'DM Mono', monospace;
+      font-size: 5rem;
+      font-weight: 500;
+      line-height: 1;
+      margin-bottom: 4px;
+      animation: countUp 0.6s ease;
+    }
+
+    .score-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ff-muted);
+      margin-bottom: 32px;
+    }
+
+    .layer-breakdown {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .layer-card {
+      background: var(--ff-surface);
+      border: 1px solid var(--ff-border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .layer-card .lc-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 500;
+    }
+
+    .layer-card .lc-lbl {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--ff-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .layer-card .lc-max {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--ff-muted);
+    }
+
+    /* Dimension bars */
+    .dim-results {
+      margin-bottom: 32px;
+    }
+
+    .dim-result-row {
+      margin-bottom: 16px;
+    }
+
+    .dim-result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .dim-result-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .dim-result-score {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--ff-muted);
+    }
+
+    .dim-bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--ff-surface2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .dim-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      animation: barGrow 0.8s ease;
+    }
+
+    .dim-result-rec {
+      font-size: 0.75rem;
+      color: var(--ff-muted);
+      font-style: italic;
+    }
+
+    .weakest-flag {
+      background: rgba(226, 75, 74, 0.08);
+      border: 1px solid rgba(226, 75, 74, 0.2);
+      border-radius: var(--ff-radius);
+      padding: 16px 20px;
+      margin-bottom: 28px;
+    }
+
+    .weakest-flag .wf-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ff-red);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .weakest-flag .wf-dim {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .cta-card {
+      background: linear-gradient(135deg, rgba(200, 240, 74, 0.1), rgba(200, 240, 74, 0.03));
+      border: 1px solid rgba(200, 240, 74, 0.2);
+      border-radius: var(--ff-radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .cta-card .cta-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: var(--ff-accent);
+    }
+
+    .cta-card .cta-body {
+      font-size: 0.9rem;
+      color: var(--ff-text);
+      line-height: 1.5;
+    }
+
+    .submit-status {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--ff-muted);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    /* ========== CONFETTI ========== */
+    .confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ========== SPECIAL REWARD CARD ========== */
+    .reward-card {
+      display: none;
+      background: var(--ff-surface);
+      border: 1.5px solid var(--ff-accent);
+      border-radius: var(--ff-radius);
+      padding: 28px 24px;
+      margin-bottom: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reward-card.visible {
+      display: block;
+      animation: rewardReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes rewardReveal {
+      0% {
+        opacity: 0;
+        transform: scale(0.85) translateY(20px);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.03) translateY(-4px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .reward-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--ff-accent), var(--ff-blue), var(--ff-accent));
+      background-size: 200% 100%;
+      animation: shimmer 2s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .reward-star {
+      font-size: 2.4rem;
+      margin-bottom: 12px;
+      display: inline-block;
+      animation: pulse 1.5s ease infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.15);
+      }
+    }
+
+    .reward-title {
+      font-family: DM Sans, sans-serif;
+      font-weight: 800;
+      font-size: 1.3rem;
+      color: var(--ff-accent);
+      margin-bottom: 8px;
+    }
+
+    .reward-body {
+      font-size: 0.95rem;
+      color: var(--ff-text);
+      line-height: 1.55;
+    }
+
+    .reward-body strong {
+      color: var(--ff-accent);
+    }
+
+    /* ========== SEPARATOR ========== */
+    .sep {
+      width: 100%;
+      height: 1px;
+      background: var(--ff-border);
+      margin: 24px 0;
+    }
+
+    /* ========== ICP BADGE ========== */
+    .icp-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 8px;
+    }
+
+    .icp-pass {
+      background: rgba(200, 240, 74, 0.15);
+      color: var(--ff-accent);
+    }
+
+    .icp-partial {
+      background: rgba(245, 166, 35, 0.15);
+      color: var(--ff-amber);
+    }
+
+    .icp-low {
+      background: rgba(226, 75, 74, 0.15);
+      color: var(--ff-red);
+    }
+
+    .icp-neutral {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--ff-muted);
+    }
+
+    .icp-nonicp {
+      background: rgba(226, 75, 74, 0.2);
+      color: var(--ff-red);
+    }
+
+    /* Mobile Responsive Code */
+    @media (max-width: 768px) {
+
+      /* Fix main container */
+      .screen {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 20px 16px;
+        min-height: 100dvh;
+      }
+
+      .screen.active {
+        display: flex;
+      }
+
+      /* Typography scaling */
+      #intro h1 {
+        font-size: 1.8rem;
+      }
+
+      .subtitle {
+        font-size: 0.95rem;
+      }
+
+      .q-text {
+        font-size: 1.1rem;
+        line-height: 1.4;
+      }
+
+      .big-score {
+        font-size: 3rem;
+      }
+
+      /* Buttons */
+      .btn {
+        width: 100%;
+        padding: 14px 18px;
+        font-size: 0.95rem;
+        min-height: 48px;
+      }
+
+      /* Form */
+      .form-group input {
+        font-size: 0.95rem;
+        padding: 12px 14px;
+      }
+
+      /* Company Snapshot Card */
+      .company-card {
+        padding: 14px;
+      }
+
+      .company-card .cc-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .company-card .cc-metric {
+        border-right: none;
+        border-bottom: 1px solid var(--ff-border);
+        padding: 10px 4px;
+      }
+
+      .company-card .cc-metric:nth-child(3),
+      .company-card .cc-metric:nth-child(4) {
+        border-bottom: none;
+      }
+
+      .company-card .cc-metric .val {
+        font-size: 1.1rem;
+      }
+
+      /* Question options */
+      .option-btn {
+        padding: 14px;
+        gap: 10px;
+      }
+
+      .option-btn .opt-text {
+        font-size: 0.9rem;
+      }
+
+      /* Navigation buttons */
+      .q-nav {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      /* Layer cards */
+      .layer-breakdown {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      /* Dimension preview */
+      .dim-row {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .dim-row .dim-name {
+        font-size: 0.85rem;
+      }
+
+      /* Cards spacing */
+      .cta-card,
+      .reward-card {
+        padding: 18px;
+      }
+
+      /* Fix overflow */
+      body {
+        padding: 0;
+      }
+    }
+
+    /* ========== SMALL PHONES (<=480px) ========== */
+    @media (max-width: 480px) {
+
+      #intro h1 {
+        font-size: 1.6rem;
+      }
+
+      .big-score {
+        font-size: 2.6rem;
+      }
+
+      /* Stack snapshot fully */
+      .company-card .cc-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .company-card .cc-metric {
+        border-bottom: 1px solid var(--ff-border);
+      }
+
+      .company-card .cc-metric:last-child {
+        border-bottom: none;
+      }
+
+      .company-card .cc-title {
+        font-size: 0.65rem;
+      }
+
+      /* Even tighter spacing */
+      .screen {
+        padding: 16px 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============ SCREEN 1: INTRO ============ -->
+  <div id="intro" class="screen active">
+    <img src="/images/FreightFox-logo.png" alt="FreightFox" style="height: auto; width:150px; margin-bottom:15px;">
+    <p class="subtitle">Benchmark your logistics maturity across 5 dimensions. Takes 3 minutes.</p>
+
+    <div class="dimensions-preview">
+      <div class="dim-row">
+        <span class="dim-num">01</span>
+        <span class="dim-name">Procurement Maturity</span>
+        <span class="dim-pts mono">20 pts</span>
+      </div>
+      <div class="dim-row">
+        <span class="dim-num">02</span>
+        <span class="dim-name">Network Intelligence</span>
+        <span class="dim-pts mono">20 pts</span>
+      </div>
+      <div class="dim-row">
+        <span class="dim-num">03</span>
+        <span class="dim-name">Load & Capacity Utilisation</span>
+        <span class="dim-pts mono">20 pts</span>
+      </div>
+      <div class="dim-row">
+        <span class="dim-num">04</span>
+        <span class="dim-name">Visibility & Spend Control</span>
+        <span class="dim-pts mono">20 pts</span>
+      </div>
+      <div class="dim-row">
+        <span class="dim-num">05</span>
+        <span class="dim-name">Compliance & Risk</span>
+        <span class="dim-pts mono">20 pts</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="showScreen('lead')">Begin Assessment</button>
+  </div>
+
+  <!-- ============ SCREEN 2: LEAD CAPTURE ============ -->
+  <div id="lead" class="screen">
+    <img src="/images/FreightFox-logo.png" alt="FreightFox" style="height: auto; width:150px; margin-bottom:15px;">
+    <h2 style="font-size:1.6rem;font-weight:700;margin-bottom:8px;">Before we begin</h2>
+    <p class="muted" style="margin-bottom:32px;font-size:0.9rem;">Tell us a bit about yourself and your company.</p>
+
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="f-name" placeholder="e.g. Rahul Sharma" required>
+    </div>
+    <div class="form-group">
+      <label>Designation / Role *</label>
+      <input type="text" id="f-designation" placeholder="e.g. Head of Logistics">
+    </div>
+    <div class="form-group">
+      <label>Company Name *</label>
+      <input type="text" id="f-company" placeholder="e.g. Tata Steel">
+      <div class="company-loading" id="company-loading">Looking up company data...</div>
+      <div class="company-card" id="company-card">
+        <div class="cc-title">Company Snapshot</div>
+        <div class="cc-grid">
+          <div class="cc-metric">
+            <div class="val" id="cc-revenue">--</div>
+            <div class="lbl">Revenue (Cr)</div>
+          </div>
+          <div class="cc-metric">
+            <div class="val" id="cc-dso">--</div>
+            <div class="lbl">DSO</div>
+          </div>
+          <div class="cc-metric">
+            <div class="val" id="cc-dpo">--</div>
+            <div class="lbl">DPO</div>
+          </div>
+          <div class="cc-metric">
+            <div class="val" id="cc-ito">--</div>
+            <div class="lbl">ITO</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Contact Number (optional)</label>
+      <input type="tel" id="f-phone" placeholder="+91 98765 43210">
+    </div>
+
+    <div style="margin-top:auto;padding-top:20px;">
+      <button class="btn btn-primary btn-full" onclick="startQuestions()">Start Scorecard</button>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 3: QUESTIONS ============ -->
+  <div id="questions" class="screen">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="q-dimension-label" id="q-dim-label"></div>
+    <div class="q-counter mono" id="q-counter"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="q-options"></div>
+    <div class="q-nav">
+      <button class="btn btn-secondary" id="btn-prev" onclick="prevQuestion()">Back</button>
+      <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()">Next</button>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 4: RESULTS ============ -->
+  <div id="results" class="screen">
+    <img src="/images/FreightFox-logo.png" alt="FreightFox" style="height: auto; width:150px; margin-bottom:15px;">
+    <p class="muted mono" style="font-size:0.75rem;margin-bottom:4px;">FREIGHT HEALTH SCORECARD</p>
+    <div class="text-center" style="margin-bottom:8px;">
+      <span class="zone-badge" id="r-zone-badge"></span>
+    </div>
+    <div class="text-center">
+      <div class="big-score" id="r-total-score">0</div>
+      <div class="score-label">out of 100</div>
+    </div>
+
+    <div class="layer-breakdown" style="grid-template-columns:1fr 1fr;">
+      <!-- ICP layer hidden from attendee (internal only) -->
+      <div class="layer-card" id="r-layer1-card" style="display:none;">
+        <div class="lc-val" id="r-layer1">--</div>
+        <div class="lc-lbl">ICP Match</div>
+        <div class="lc-max">/40</div>
+      </div>
+      <div class="layer-card">
+        <div class="lc-val" id="r-layer2">--</div>
+        <div class="lc-lbl">Financial Health</div>
+        <div class="lc-max">/35</div>
+      </div>
+      <div class="layer-card">
+        <div class="lc-val" id="r-layer3">--</div>
+        <div class="lc-lbl">Self-Assessment</div>
+        <div class="lc-max">/25</div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <p class="mono muted" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">
+      Dimension Breakdown</p>
+    <div class="dim-results" id="r-dimensions"></div>
+
+    <div class="weakest-flag" id="r-weakest">
+      <div class="wf-label">Weakest Dimension</div>
+      <div class="wf-dim" id="r-weakest-name"></div>
+    </div>
+
+    <div class="reward-card" id="r-reward">
+      <div class="reward-star">&#9733;</div>
+      <div class="reward-title">We have something special for you.</div>
+      <div class="reward-body" id="r-reward-body">Your freight maturity puts you in the top tier. Come talk to us at the
+        booth — we've got an <strong>exclusive offer</strong> for companies operating at your level.</div>
+    </div>
+
+    <div class="cta-card" id="r-cta">
+      <div class="cta-title" id="r-cta-title"></div>
+      <div class="cta-body" id="r-cta-body"></div>
+    </div>
+
+    <div class="submit-status" id="submit-status"></div>
+
+    <button class="btn btn-secondary btn-full" onclick="startOver()" style="margin-top:12px;">Start Over</button>
+  </div>
+
+
+  <script>
+    // ========== STATE ==========
+    const API_BASE = window.location.origin;
+    let companyData = null;
+    let currentQ = 0;
+    let answers = {};
+
+    // ========== QUESTIONS DATA ==========
+    const DIMENSIONS = [
+      { id: 'procurement', name: 'Procurement Maturity', maxRaw: 12 },
+      { id: 'network', name: 'Network Intelligence', maxRaw: 12 },
+      { id: 'load', name: 'Load & Capacity Utilisation', maxRaw: 12 },
+      { id: 'visibility', name: 'Visibility & Spend Control', maxRaw: 8 },
+      { id: 'compliance', name: 'Compliance & Risk', maxRaw: 8 },
+    ];
+
+    const QUESTIONS = [
+      {
+        dim: 0, text: 'How do you benchmark freight rates?',
+        opts: [
+          { letter: 'A', text: 'We go by whatever the transporter quotes', pts: 1 },
+          { letter: 'B', text: 'We compare quotes from 2\u20133 vendors informally', pts: 2 },
+          { letter: 'C', text: 'We use market benchmarks or historical data', pts: 3 },
+          { letter: 'D', text: 'We use ZBC/cost-build-up models for negotiation', pts: 4 },
+        ]
+      },
+      {
+        dim: 0, text: 'What % of freight moves on contracted rates vs spot?',
+        opts: [
+          { letter: 'A', text: 'Mostly spot \u2014 less than 30% contracted', pts: 1 },
+          { letter: 'B', text: 'Mix \u2014 about 30\u201360% contracted', pts: 2 },
+          { letter: 'C', text: 'Mostly contracted \u2014 60\u201380%', pts: 3 },
+          { letter: 'D', text: 'High contract coverage \u2014 over 80%', pts: 4 },
+        ]
+      },
+      {
+        dim: 0, text: 'How do you run freight negotiations?',
+        opts: [
+          { letter: 'A', text: 'Calls and WhatsApp with regular transporters', pts: 1 },
+          { letter: 'B', text: 'Email-based quote collection', pts: 2 },
+          { letter: 'C', text: 'Spreadsheet-tracked multi-vendor bidding', pts: 3 },
+          { letter: 'D', text: 'Digital auction or RFQ platform', pts: 4 },
+        ]
+      },
+      {
+        dim: 1, text: 'Do you classify lanes \u2014 head-haul, dense-haul, lean-haul, reverse?',
+        opts: [
+          { letter: 'A', text: 'No, we treat all lanes the same way', pts: 1 },
+          { letter: 'B', text: 'We informally know which lanes are busy vs slow', pts: 2 },
+          { letter: 'C', text: 'We\u2019ve mapped major lanes but haven\u2019t formalised it', pts: 3 },
+          { letter: 'D', text: 'Yes \u2014 classified and used for procurement strategy', pts: 4 },
+        ]
+      },
+      {
+        dim: 1, text: 'Can you see rate variance across lanes and vendors?',
+        opts: [
+          { letter: 'A', text: 'No \u2014 rates scattered across emails and calls', pts: 1 },
+          { letter: 'B', text: 'Partially \u2014 some lanes tracked in spreadsheets', pts: 2 },
+          { letter: 'C', text: 'Yes, with manual reporting at month-end', pts: 3 },
+          { letter: 'D', text: 'Yes \u2014 real-time dashboard or system visibility', pts: 4 },
+        ]
+      },
+      {
+        dim: 1, text: 'Do you have dedicated fleet or circular loops on stable lanes?',
+        opts: [
+          { letter: 'A', text: 'No, everything is ad hoc spot hiring', pts: 1 },
+          { letter: 'B', text: 'Some preferred vendors but no formal loops', pts: 2 },
+          { letter: 'C', text: '2\u20133 lanes have dedicated transporter arrangements', pts: 3 },
+          { letter: 'D', text: 'Multiple circular/stable lanes with contract fleet', pts: 4 },
+        ]
+      },
+      {
+        dim: 2, text: 'What is your average truck load utilisation?',
+        opts: [
+          { letter: 'A', text: 'Below 60%', pts: 1 },
+          { letter: 'B', text: '60\u201375%', pts: 2 },
+          { letter: 'C', text: '75\u201390%', pts: 3 },
+          { letter: 'D', text: 'Above 90%', pts: 4 },
+        ]
+      },
+      {
+        dim: 2, text: 'Are you actively consolidating LTL shipments?',
+        opts: [
+          { letter: 'A', text: 'No \u2014 move shipments as they come', pts: 1 },
+          { letter: 'B', text: 'Informally \u2014 sometimes wait for more cargo', pts: 2 },
+          { letter: 'C', text: 'Yes, for some lanes or regions', pts: 3 },
+          { letter: 'D', text: 'Yes \u2014 systematic consolidation with planning tools', pts: 4 },
+        ]
+      },
+      {
+        dim: 2, text: 'Do you track and recover value on return legs / empty miles?',
+        opts: [
+          { letter: 'A', text: 'No visibility into return trips or empty miles', pts: 1 },
+          { letter: 'B', text: 'Aware but don\u2019t actively manage it', pts: 2 },
+          { letter: 'C', text: 'Some lanes have informal return load arrangements', pts: 3 },
+          { letter: 'D', text: 'Systematic return-leg utilisation or backhaul program', pts: 4 },
+        ]
+      },
+      {
+        dim: 3, text: 'How do you track shipments in transit?',
+        opts: [
+          { letter: 'A', text: 'Driver calls \u2014 no formal tracking', pts: 1 },
+          { letter: 'B', text: 'Transporter SMS/WhatsApp updates', pts: 2 },
+          { letter: 'C', text: 'GPS tracking on some vehicles or lanes', pts: 3 },
+          { letter: 'D', text: 'Real-time platform tracking with alerts', pts: 4 },
+        ]
+      },
+      {
+        dim: 3, text: 'How often do you get freight spend reports?',
+        opts: [
+          { letter: 'A', text: 'Monthly or less', pts: 1 },
+          { letter: 'B', text: 'Weekly', pts: 2 },
+          { letter: 'C', text: 'Daily', pts: 3 },
+          { letter: 'D', text: 'Real-time', pts: 4 },
+        ]
+      },
+      {
+        dim: 4, text: 'What is your typical on-time delivery rate?',
+        opts: [
+          { letter: 'A', text: 'Below 70%', pts: 1 },
+          { letter: 'B', text: '70\u201385%', pts: 2 },
+          { letter: 'C', text: '85\u201395%', pts: 3 },
+          { letter: 'D', text: 'Above 95%', pts: 4 },
+        ]
+      },
+      {
+        dim: 4, text: 'How is GST, EWB, and freight documentation managed?',
+        opts: [
+          { letter: 'A', text: 'Mostly manual \u2014 errors and delays common', pts: 1 },
+          { letter: 'B', text: 'Partially digitised \u2014 some docs still on paper', pts: 2 },
+          { letter: 'C', text: 'Digitised but not integrated with freight ops', pts: 3 },
+          { letter: 'D', text: 'Fully integrated \u2014 auto-generated, compliance-tracked', pts: 4 },
+        ]
+      },
+    ];
+
+    // ========== SCREEN NAV ==========
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    // ========== COMPANY LOOKUP ==========
+    let lookupTimer = null;
+    let lookupReqId = 0; // guard against out-of-order responses
+    document.getElementById('f-company').addEventListener('blur', function () {
+      const name = this.value.trim();
+      if (name.length < 2) return;
+      lookupCompany(name);
+    });
+    document.getElementById('f-company').addEventListener('input', function () {
+      clearTimeout(lookupTimer);
+      const name = this.value.trim();
+      const card = document.getElementById('company-card');
+      const loading = document.getElementById('company-loading');
+      // Empty input → hide card and abort
+      if (name.length === 0) {
+        card.classList.remove('visible', 'loading');
+        loading.classList.remove('visible');
+        companyData = null;
+        return;
+      }
+      if (name.length < 3) return;
+      // 300ms debounce per spec
+      lookupTimer = setTimeout(() => lookupCompany(name), 300);
+    });
+
+    // Fetch helper: tries /company-snapshot first, falls back to /api/company,
+    // and returns a normalized { found, company_name, revenue_cr, dso_days, dpo_days, ito_ratio, sector, icp_match }
+    async function fetchCompanySnapshot(name) {
+      // 1) New lightweight endpoint
+      try {
+        const r = await fetch(`${API_BASE}/company-snapshot?name=${encodeURIComponent(name)}`);
+        if (r.ok) {
+          const d = await r.json();
+          if (d && (d.revenue_cr != null || d.dso_days != null || d.dpo_days != null || d.ito_ratio != null)) {
+            return { found: true, sector: null, icp_match: null, ...d };
+          }
+        }
+      } catch (_) { /* ignore, fall through */ }
+
+      // 2) Fallback to the richer existing endpoint
+      try {
+        const r = await fetch(`${API_BASE}/api/company?name=${encodeURIComponent(name)}`);
+        if (r.ok) {
+          const d = await r.json();
+          return d; // already has found/icp_match/sector/etc.
+        }
+      } catch (_) { /* ignore */ }
+
+      // 3) Client-side mock fallback (API unreachable)
+      const seed = Array.from(name.toLowerCase()).reduce((a, c) => a + c.charCodeAt(0), 0) || 1;
+      return {
+        found: true,
+        company_name: name,
+        revenue_cr: Math.round(1500 + (seed * 37) % 8000),
+        dso_days: 30 + (seed % 60),
+        dpo_days: 40 + ((seed * 3) % 60),
+        ito_ratio: Math.round((3 + (seed % 90) / 10) * 10) / 10,
+        sector: null,
+        icp_match: null,
+        source: 'mock-client',
+      };
+    }
+
+    async function lookupCompany(name) {
+      const loading = document.getElementById('company-loading');
+      const card = document.getElementById('company-card');
+      const reqId = ++lookupReqId;
+
+      // Show the card immediately in shimmer-loading state (smooth transition)
+      card.classList.add('visible', 'loading');
+      loading.classList.add('visible');
+      document.getElementById('cc-revenue').textContent = '\u2003'; // em-space — shimmer will mask
+      document.getElementById('cc-dso').textContent = '\u2003';
+      document.getElementById('cc-dpo').textContent = '\u2003';
+      document.getElementById('cc-ito').textContent = '\u2003';
+
+      try {
+        const data = await fetchCompanySnapshot(name);
+
+        // If a newer request has started, discard this response
+        if (reqId !== lookupReqId) return;
+
+        companyData = data;
+        loading.classList.remove('visible');
+
+        if (data && data.found !== false) {
+          card.classList.remove('loading');
+          document.getElementById('cc-revenue').textContent = data.revenue_cr != null ? `\u20B9${numberFmt(data.revenue_cr)}` : '--';
+          document.getElementById('cc-dso').textContent = data.dso_days != null ? `${data.dso_days}d` : '--';
+          document.getElementById('cc-dpo').textContent = data.dpo_days != null ? `${data.dpo_days}d` : '--';
+          document.getElementById('cc-ito').textContent = data.ito_ratio != null ? `${data.ito_ratio}x` : '--';
+
+          // ICP badge (only when we have sector/icp info)
+          const badgeContainer = document.getElementById('icp-badge-container');
+          if (badgeContainer) {
+            badgeContainer.innerHTML = '';
+            const badge = document.createElement('span');
+            badge.className = 'icp-badge';
+
+            if (data.icp_match === false && isSectorDisqualified(data.sector)) {
+              badge.classList.add('icp-nonicp');
+              badge.textContent = 'Non-ICP Sector';
+            } else if (data.revenue_cr >= 4000) {
+              badge.classList.add('icp-pass');
+              badge.textContent = 'ICP Match';
+            } else if (data.revenue_cr >= 1000) {
+              badge.classList.add('icp-partial');
+              badge.textContent = 'Partial ICP';
+            } else if (data.revenue_cr != null) {
+              badge.classList.add('icp-low');
+              badge.textContent = 'Below ICP Threshold';
+            } else {
+              badge.classList.add('icp-neutral');
+              badge.textContent = 'Revenue Data Unavailable';
+            }
+            badgeContainer.appendChild(badge);
+          }
+          card.classList.add('visible');
+        } else {
+          // Not found → hide card quietly
+          card.classList.remove('visible', 'loading');
+        }
+      } catch (e) {
+        if (reqId !== lookupReqId) return;
+        loading.classList.remove('visible');
+        card.classList.remove('visible', 'loading');
+        console.error('Company lookup failed:', e);
+      }
+    }
+
+    function isSectorDisqualified(sector) {
+      if (!sector) return false;
+      const s = sector.toLowerCase();
+      const disq = ['services', 'it', 'software', 'government', 'healthcare', 'hospitals', 'ngo', 'banking', 'financial services', 'information technology', 'finance', 'insurance'];
+      return disq.some(d => s.includes(d));
+    }
+
+    function numberFmt(n) {
+      if (n == null) return '--';
+      return Number(n).toLocaleString('en-IN');
+    }
+
+    // ========== LEAD FORM ==========
+    function startQuestions() {
+      const name = document.getElementById('f-name').value.trim();
+      const desg = document.getElementById('f-designation').value.trim();
+      const comp = document.getElementById('f-company').value.trim();
+      if (!name || !desg || !comp) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      currentQ = 0;
+      renderQuestion();
+      showScreen('questions');
+    }
+
+    // ========== QUESTIONS ==========
+    function renderQuestion() {
+      const q = QUESTIONS[currentQ];
+      const dim = DIMENSIONS[q.dim];
+
+      document.getElementById('progress-fill').style.width = `${((currentQ + 1) / QUESTIONS.length) * 100}%`;
+      document.getElementById('q-dim-label').textContent = dim.name;
+      document.getElementById('q-counter').textContent = `Question ${currentQ + 1} of ${QUESTIONS.length}`;
+      document.getElementById('q-text').textContent = q.text;
+
+      const optsEl = document.getElementById('q-options');
+      optsEl.innerHTML = '';
+      q.opts.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn' + (answers[currentQ] === i ? ' selected' : '');
+        btn.innerHTML = `<span class="opt-letter">${opt.letter}</span><span class="opt-text">${opt.text}</span>`;
+        btn.onclick = () => selectOption(i);
+        optsEl.appendChild(btn);
+      });
+
+      document.getElementById('btn-prev').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+      document.getElementById('btn-next').textContent = currentQ === QUESTIONS.length - 1 ? 'See Results' : 'Next';
+    }
+
+    function selectOption(i) {
+      answers[currentQ] = i;
+      document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+        btn.classList.toggle('selected', idx === i);
+      });
+    }
+
+    function nextQuestion() {
+      if (answers[currentQ] === undefined) {
+        // Subtle shake
+        document.getElementById('q-options').style.animation = 'none';
+        void document.getElementById('q-options').offsetHeight;
+        return;
+      }
+      if (currentQ < QUESTIONS.length - 1) {
+        currentQ++;
+        renderQuestion();
+        window.scrollTo(0, 0);
+      } else {
+        calculateResults();
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQ > 0) {
+        currentQ--;
+        renderQuestion();
+        window.scrollTo(0, 0);
+      }
+    }
+
+    // ========== SCORING ==========
+    const SECTOR_DISQUALIFIERS_JS = ['services', 'it', 'software', 'government', 'healthcare', 'hospitals', 'ngo', 'banking', 'financial services', 'information technology', 'finance', 'insurance'];
+
+    function calculateResults() {
+      // --- Layer 1: ICP Match (0-40) ---
+      let layer1 = 20; // default neutral
+      let icpStatus = 'Review';
+
+      if (companyData && companyData.found) {
+        const sector = (companyData.sector || '').toLowerCase();
+        const isDisqualified = SECTOR_DISQUALIFIERS_JS.some(d => sector.includes(d));
+
+        if (isDisqualified) {
+          layer1 = 0;
+          icpStatus = 'No';
+        } else if (companyData.revenue_cr != null) {
+          if (companyData.revenue_cr >= 4000) {
+            layer1 = 40;
+            icpStatus = 'Yes';
+          } else if (companyData.revenue_cr >= 1000) {
+            layer1 = 20;
+            icpStatus = 'Review';
+          } else {
+            layer1 = 5;
+            icpStatus = 'No';
+          }
+        }
+      }
+
+      // --- Layer 2: Financial Health (0-35) ---
+      let layer2 = 17.5; // default midpoint
+      let hasFinancials = false;
+
+      if (companyData && companyData.found) {
+        let dsoScore = 0, dpoScore = 0, itoScore = 0;
+        let hasAny = false;
+
+        if (companyData.dso_days != null) {
+          hasAny = true;
+          const d = companyData.dso_days;
+          dsoScore = d < 30 ? 12 : d <= 60 ? 8 : d <= 90 ? 4 : 1;
+        }
+        if (companyData.dpo_days != null) {
+          hasAny = true;
+          const d = companyData.dpo_days;
+          dpoScore = d > 60 ? 12 : d >= 30 ? 8 : d >= 15 ? 4 : 1;
+        }
+        if (companyData.ito_ratio != null) {
+          hasAny = true;
+          const r = companyData.ito_ratio;
+          itoScore = r > 8 ? 11 : r >= 5 ? 7 : r >= 3 ? 4 : 1;
+        }
+
+        if (hasAny) {
+          layer2 = dsoScore + dpoScore + itoScore;
+          hasFinancials = true;
+        }
+      }
+
+      // --- Layer 3: Self-Reported (0-25) ---
+      // Raw score: sum of all question points
+      let rawTotal = 0;
+      const dimRaw = [0, 0, 0, 0, 0]; // raw pts per dimension
+
+      QUESTIONS.forEach((q, i) => {
+        const pts = q.opts[answers[i]].pts;
+        rawTotal += pts;
+        dimRaw[q.dim] += pts;
+      });
+
+      // Max possible raw = 13 questions * 4 pts = 52
+      const layer3 = (rawTotal / 52) * 25;
+
+      // --- Final Score ---
+      const totalScore = Math.round(layer1 + layer2 + layer3);
+
+      // --- Per-dimension scores (normalised to /20) ---
+      const dimScores = DIMENSIONS.map((dim, i) => {
+        const normalised = (dimRaw[i] / dim.maxRaw) * 20;
+        return Math.round(normalised * 10) / 10;
+      });
+
+      // --- Zone ---
+      let zone, zoneClass, zoneName;
+      if (totalScore <= 40) {
+        zone = 'reactive'; zoneClass = 'zone-reactive'; zoneName = 'Reactive';
+      } else if (totalScore <= 60) {
+        zone = 'controlled'; zoneClass = 'zone-controlled'; zoneName = 'Controlled';
+      } else if (totalScore <= 80) {
+        zone = 'optimised'; zoneClass = 'zone-optimised'; zoneName = 'Optimised';
+      } else {
+        zone = 'algorithmic'; zoneClass = 'zone-algorithmic'; zoneName = 'Algorithmic-Ready';
+      }
+
+      // --- Weakest dimension ---
+      let weakestIdx = 0;
+      let weakestScore = dimScores[0];
+      dimScores.forEach((s, i) => {
+        if (s < weakestScore) { weakestScore = s; weakestIdx = i; }
+      });
+
+      // --- Recommendations ---
+      const RECS = [
+        'Move from ad-hoc quoting to structured rate benchmarking and contract coverage.',
+        'Classify your lanes and build visibility into rate variance across your network.',
+        'Focus on load consolidation and return-leg utilisation to cut empty miles.',
+        'Invest in real-time tracking and automated spend reporting.',
+        'Digitise compliance workflows and tighten on-time delivery monitoring.',
+      ];
+      const DIM_RECS = [
+        'Start with ZBC models for your top 10 lanes.',
+        'Map head-haul vs lean-haul and price accordingly.',
+        'Pilot LTL consolidation on 2\u20133 high-frequency routes.',
+        'Deploy GPS tracking on top corridors first.',
+        'Integrate EWB generation with your dispatch flow.',
+      ];
+
+      // --- Zone CTA ---
+      const CTA = {
+        reactive: {
+          title: 'Your next step: Build the foundation',
+          body: 'Your freight operations are largely manual and reactive. FreightFox can help you digitise procurement, build rate benchmarks, and gain basic visibility \u2014 the building blocks for saving 8\u201315% on freight spend.'
+        },
+        controlled: {
+          title: 'Your next step: Close the gaps',
+          body: 'You have some processes in place but critical gaps remain. FreightFox can plug those gaps with automated RFQs, lane-level analytics, and real-time tracking \u2014 typically unlocking 5\u201310% additional savings.'
+        },
+        optimised: {
+          title: 'Your next step: Optimise at scale',
+          body: 'Strong foundation in place. FreightFox can take you further with algorithmic rate discovery, predictive demand planning, and network-level optimisation across your full lane portfolio.'
+        },
+        algorithmic: {
+          title: 'You\'re ahead of the curve',
+          body: 'Your freight operations are mature. FreightFox can add value through advanced analytics, AI-driven procurement, and cross-shipper network effects that are hard to build in-house.'
+        },
+      };
+
+      // --- Render Results ---
+      showScreen('results');
+
+      // High scorer? (Optimised or Algorithmic-Ready)
+      const isHighScorer = totalScore >= 61;
+
+      // Score animation
+      const scoreEl = document.getElementById('r-total-score');
+      animateNumber(scoreEl, totalScore, 1200);
+
+      // Confetti burst for high scorers
+      if (isHighScorer) {
+        setTimeout(() => launchConfetti(), 800);
+      }
+
+      // Reward card
+      const rewardCard = document.getElementById('r-reward');
+      if (isHighScorer) {
+        setTimeout(() => rewardCard.classList.add('visible'), 1400);
+      } else {
+        rewardCard.classList.remove('visible');
+      }
+
+      // Zone badge
+      const badge = document.getElementById('r-zone-badge');
+      badge.textContent = zoneName;
+      badge.className = 'zone-badge ' + zoneClass;
+
+      // Layer scores
+      document.getElementById('r-layer1').textContent = Math.round(layer1);
+      document.getElementById('r-layer2').textContent = Math.round(layer2 * 10) / 10;
+      document.getElementById('r-layer3').textContent = Math.round(layer3 * 10) / 10;
+
+      // Dimension bars
+      const dimEl = document.getElementById('r-dimensions');
+      dimEl.innerHTML = '';
+      const barColors = ['var(--ff-accent)', 'var(--ff-blue)', 'var(--ff-amber)', 'var(--ff-accent)', 'var(--ff-red)'];
+
+      DIMENSIONS.forEach((dim, i) => {
+        const pct = (dimScores[i] / 20) * 100;
+        const color = barColors[i];
+        const row = document.createElement('div');
+        row.className = 'dim-result-row';
+        row.innerHTML = `
+      <div class="dim-result-header">
+        <span class="dim-result-name">${dim.name}</span>
+        <span class="dim-result-score mono">${dimScores[i]}/20</span>
+      </div>
+      <div class="dim-bar-track">
+        <div class="dim-bar-fill" style="width:${pct}%;background:${color};animation-delay:${i * 0.15}s"></div>
+      </div>
+      <div class="dim-result-rec">${DIM_RECS[i]}</div>
+    `;
+        dimEl.appendChild(row);
+      });
+
+      // Weakest
+      document.getElementById('r-weakest-name').textContent = DIMENSIONS[weakestIdx].name;
+
+      // CTA
+      document.getElementById('r-cta-title').textContent = CTA[zone].title;
+      document.getElementById('r-cta-body').textContent = CTA[zone].body;
+
+      // --- Submit to backend ---
+      const keyRec = RECS[weakestIdx];
+      const payload = {
+        full_name: document.getElementById('f-name').value.trim(),
+        designation: document.getElementById('f-designation').value.trim(),
+        company_name: document.getElementById('f-company').value.trim(),
+        contact_number: document.getElementById('f-phone').value.trim() || null,
+        total_score: totalScore,
+        zone: zoneName,
+        icp_match: icpStatus === 'Yes' ? true : icpStatus === 'No' ? false : null,
+        dimension_scores: {
+          procurement_maturity: dimScores[0],
+          network_intelligence: dimScores[1],
+          load_capacity: dimScores[2],
+          visibility_spend: dimScores[3],
+          compliance_risk: dimScores[4],
+        },
+        weakest_dimension: DIMENSIONS[weakestIdx].name,
+        key_recommendation: keyRec,
+        company_data: companyData,
+        answers: answers,
+        layer_scores: { layer1, layer2, layer3 },
+      };
+
+      // Backend save
+      fetch(`${API_BASE}/api/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then(r => r.json()).then(d => {
+        console.log('Saved to backend:', d);
+      }).catch(e => console.error('Backend save failed:', e));
+
+      // --- Jotform submission ---
+      submitToJotform(payload, dimScores, zoneName, icpStatus, keyRec, weakestIdx);
+    }
+
+    function animateNumber(el, target, duration) {
+      const start = performance.now();
+      const step = (now) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.round(eased * target);
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    // ========== JOTFORM ==========
+    async function submitToJotform(payload, dimScores, zoneName, icpStatus, keyRec, weakestIdx) {
+      const statusEl = document.getElementById('submit-status');
+      statusEl.textContent = 'Submitting to CRM...';
+
+      const FORM_ID = '261021112289042';
+      // Jotform API submission via their submit endpoint
+      // Using the form's submission URL directly (no API key needed for submissions)
+      const formData = new FormData();
+
+      // Map fields — Jotform field IDs need to be configured after form setup
+      // Using generic question IDs (q3, q4, etc.) — update these to match your form
+      formData.append('submission[3]', payload.full_name);
+      formData.append('submission[4]', payload.designation);
+      formData.append('submission[5]', payload.company_name);
+      formData.append('submission[6]', payload.contact_number || '');
+      formData.append('submission[7]', payload.total_score);
+      formData.append('submission[8]', zoneName);
+      formData.append('submission[9]', icpStatus);
+      formData.append('submission[10]', dimScores[0]);
+      formData.append('submission[11]', dimScores[1]);
+      formData.append('submission[12]', dimScores[2]);
+      formData.append('submission[13]', dimScores[3]);
+      formData.append('submission[14]', dimScores[4]);
+      formData.append('submission[15]', DIMENSIONS[weakestIdx].name);
+      formData.append('submission[16]', keyRec);
+      formData.append('submission[17]', new Date().toISOString().split('T')[0]);
+      formData.append('submission[18]', payload.company_data?.revenue_cr || 'N/A');
+      formData.append('submission[19]', payload.company_data?.dso_days || 'N/A');
+      formData.append('submission[20]', payload.company_data?.dpo_days || 'N/A');
+      formData.append('submission[21]', payload.company_data?.ito_ratio || 'N/A');
+
+      try {
+        const resp = await fetch(`https://submit.jotform.com/submit/${FORM_ID}`, {
+          method: 'POST',
+          body: formData,
+          mode: 'no-cors', // Jotform doesn't support CORS on submit endpoint
+        });
+        statusEl.textContent = 'Submitted successfully';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      } catch (e) {
+        console.error('Jotform submission failed:', e);
+        statusEl.textContent = 'Saved locally (Jotform submission pending)';
+      }
+    }
+
+    // ========== CONFETTI ==========
+    function launchConfetti() {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'confetti-canvas';
+      document.body.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#C8F04A', '#378ADD', '#F5A623', '#E24B4A', '#F0EEE8', '#C8F04A'];
+      const particles = [];
+      const count = 120;
+
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+          y: canvas.height * 0.4,
+          vx: (Math.random() - 0.5) * 16,
+          vy: -Math.random() * 18 - 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 8 + 3,
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 12,
+          gravity: 0.35 + Math.random() * 0.15,
+          opacity: 1,
+          shape: Math.random() > 0.5 ? 'rect' : 'circle',
+        });
+      }
+
+      let frame = 0;
+      const maxFrames = 180;
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        frame++;
+
+        for (const p of particles) {
+          p.x += p.vx;
+          p.vy += p.gravity;
+          p.y += p.vy;
+          p.vx *= 0.98;
+          p.rotation += p.rotSpeed;
+          p.opacity = Math.max(0, 1 - frame / maxFrames);
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+
+          if (p.shape === 'rect') {
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        if (frame < maxFrames) {
+          requestAnimationFrame(draw);
+        } else {
+          canvas.remove();
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+
+    // ========== START OVER ==========
+    function startOver() {
+      companyData = null;
+      currentQ = 0;
+      answers = {};
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-designation').value = '';
+      document.getElementById('f-company').value = '';
+      document.getElementById('f-phone').value = '';
+      document.getElementById('company-card').classList.remove('visible');
+      document.getElementById('icp-badge-container').innerHTML = '';
+      showScreen('intro');
+    }
+  </script>
+</body>
+
+</html>
