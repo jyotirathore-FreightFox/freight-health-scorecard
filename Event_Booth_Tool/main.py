@@ -28,12 +28,13 @@ from typing import Optional
 from fastapi.staticfiles import StaticFiles
 
 # ---------------------------------------------------------------------------
-# Tofler Pro credentials from parent .env
+# Credentials from parent .env
 # ---------------------------------------------------------------------------
-ENV_PATH = Path(__file__).parent.parent / ".env"
+ENV_PATH = Path(__file__).parent / ".env"
 env = dotenv_values(str(ENV_PATH))
 TOFLER_EMAIL = env.get("TOFLER_EMAIL", "")
 TOFLER_PASSWORD = env.get("TOFLER_PASSWORD", "")
+HUBSPOT_ACCESS_TOKEN = env.get("HUBSPOT_ACCESS_TOKEN", "")
 
 # ---------------------------------------------------------------------------
 # Playwright browser (lazy-init, reused across requests)
@@ -61,10 +62,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # Serve static assets (logo, images, etc.) from ./images/
 IMAGES_DIR = Path(__file__).parent / "images"
 if IMAGES_DIR.exists():
     app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
+
 # ---------------------------------------------------------------------------
 # Cache
 # ---------------------------------------------------------------------------
@@ -193,7 +196,6 @@ def _try_screener(name: str) -> Optional[dict]:
 
         # Parse quarterly/annual results table for revenue if not found
         if data["revenue_cr"] is None:
-            # Try the profit-loss section
             pl_section = soup.find("section", id="profit-loss")
             if pl_section:
                 table = pl_section.find("table")
@@ -203,14 +205,12 @@ def _try_screener(name: str) -> Optional[dict]:
                         cells = row.find_all("td")
                         header = row.find("td", class_="text")
                         if header and "sales" in header.get_text(strip=True).lower():
-                            # Last cell is TTM or latest
                             if cells:
                                 last_val = cells[-1].get_text(strip=True)
                                 data["revenue_cr"] = _parse_number(last_val)
                                 break
 
         # Parse balance sheet for DSO/DPO if not found from ratios
-        # Try "Ratios" section
         ratios_section = soup.find("section", id="ratios")
         if ratios_section:
             table = ratios_section.find("table")
@@ -240,7 +240,7 @@ def _try_screener(name: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Tofler.in Pro lookup (Playwright-based, reuses your existing approach)
+# Tofler.in Pro lookup (Playwright-based)
 # ---------------------------------------------------------------------------
 
 async def _ensure_tofler_browser():
@@ -265,7 +265,6 @@ async def _ensure_tofler_browser():
         await _tofler_page.goto("https://www.tofler.in/login", wait_until="domcontentloaded", timeout=30000)
         await _tofler_page.wait_for_timeout(2000)
 
-        # Fill login form
         email_input = await _tofler_page.query_selector(
             'input[type="email"], input[name="email"], #email, '
             'input[placeholder*="mail"], input[placeholder*="Email"]'
@@ -302,7 +301,6 @@ async def _ensure_tofler_browser():
         else:
             print("[tofler] Could not find login form fields")
 
-    # Navigate to finder for search
     await _tofler_page.goto("https://www.tofler.in/finder", wait_until="domcontentloaded", timeout=30000)
     await _tofler_page.wait_for_timeout(1000)
 
@@ -343,7 +341,6 @@ async def _tofler_search(page, company_name: str) -> Optional[dict]:
         return None
 
     name_upper = company_name.upper()
-    # Prefer close name match
     for r in results:
         if r.get("subtype") != "companyinfo":
             continue
@@ -351,7 +348,6 @@ async def _tofler_search(page, company_name: str) -> Optional[dict]:
         if name_upper in label or label in name_upper:
             return {"label": r["label"], "cin": r["value"], "url": r["url"]}
 
-    # Fallback: first company result
     for r in results:
         if r.get("subtype") == "companyinfo":
             return {"label": r["label"], "cin": r["value"], "url": r["url"]}
@@ -381,7 +377,6 @@ async def _tofler_scrape_company(page, tofler_url: str) -> Optional[dict]:
             "is_listed": False,
         }
 
-        # Financial year
         fy_match = re.search(r'Based on (\w+ \d{4}) numbers', body)
         if not fy_match:
             all_fy = re.findall(r'Mar(?:ch)?\s*(\d{4})', body)
@@ -389,7 +384,6 @@ async def _tofler_scrape_company(page, tofler_url: str) -> Optional[dict]:
         else:
             data["_fy"] = fy_match.group(1)
 
-        # Extract revenue (Pro exact value)
         exact_data = await work_page.evaluate("""
             () => {
                 const body = document.body.innerText;
@@ -427,7 +421,6 @@ async def _tofler_scrape_company(page, tofler_url: str) -> Optional[dict]:
             except ValueError:
                 pass
 
-        # Fallback: revenue bucket
         if data["revenue_cr"] is None:
             rev_match = re.search(r'Revenue\s*\n\s*₹\s*([^\n]+)', body)
             if rev_match:
@@ -440,8 +433,6 @@ async def _tofler_scrape_company(page, tofler_url: str) -> Optional[dict]:
                     elif m_gt:
                         data["revenue_cr"] = float(m_gt.group(1))
 
-        # Extract DPO, Days Inventory, CCC, ITO from the Efficiency section
-        # Tofler format: "Days Payable\t87.0\t85.0\t63.0\t80.0\t78.0" (last = latest FY)
         ratio_data = await work_page.evaluate("""
             () => {
                 const body = document.body.innerText;
@@ -450,7 +441,6 @@ async def _tofler_scrape_company(page, tofler_url: str) -> Optional[dict]:
 
                 const getLastNum = (line) => {
                     const parts = line.split('\\t').filter(v => v.trim());
-                    // Walk backwards to find last numeric value
                     for (let i = parts.length - 1; i >= 1; i--) {
                         const v = parseFloat(parts[i].replace(/,/g, ''));
                         if (!isNaN(v)) return v;
@@ -464,17 +454,13 @@ async def _tofler_scrape_company(page, tofler_url: str) -> Optional[dict]:
                     if (/^Days\\s*Inventory\\t/i.test(l)) result.days_inventory = getLastNum(l);
                     if (/^Cash\\s*Conversion\\s*Cycle\\t/i.test(l)) result.ccc = getLastNum(l);
                     if (/^Inventory\\s*Turnover\\t/i.test(l)) result.ito = getLastNum(l);
-                    // Some pages show Days Receivable directly
                     if (/^Days\\s*Receivable\\t/i.test(l) || /^Debtor\\s*Days\\t/i.test(l)) result.dso = getLastNum(l);
                 }
 
-                // Derive DSO from CCC if not directly available
-                // CCC = DSO + Days Inventory - DPO => DSO = CCC - Days Inventory + DPO
                 if (!result.dso && result.ccc != null && result.days_inventory != null && result.dpo != null) {
                     result.dso = Math.round((result.ccc - result.days_inventory + result.dpo) * 10) / 10;
                 }
 
-                // Derive ITO from Days Inventory if not available: ITO ≈ 365 / Days Inventory
                 if (!result.ito && result.days_inventory && result.days_inventory > 0) {
                     result.ito = Math.round((365 / result.days_inventory) * 10) / 10;
                 }
@@ -488,7 +474,6 @@ async def _tofler_scrape_company(page, tofler_url: str) -> Optional[dict]:
             data["dpo_days"] = ratio_data.get("dpo")
             data["ito_ratio"] = ratio_data.get("ito")
 
-        # Sector
         sector_match = re.search(r'(?:Industry|Sector|Classification)\s*[:\n]\s*([^\n]+)', body)
         if sector_match:
             data["sector"] = sector_match.group(1).strip()
@@ -526,7 +511,6 @@ async def _try_tofler(name: str) -> Optional[dict]:
             data["company_name"] = match["label"]
             data["is_listed"] = match["cin"].startswith("L")
 
-        # Reset finder page for next search
         await page.goto("https://www.tofler.in/finder", wait_until="domcontentloaded", timeout=15000)
         await page.wait_for_timeout(500)
 
@@ -554,6 +538,85 @@ def _compute_icp(data: dict) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# HubSpot integration
+# ---------------------------------------------------------------------------
+def _send_to_hubspot(entry: dict) -> dict:
+    """Push full assessment data to HubSpot as a Contact."""
+    if not HUBSPOT_ACCESS_TOKEN:
+        return {"status": "skipped", "reason": "no token configured"}
+
+    # Split "Rahul Sharma" → firstname="Rahul", lastname="Sharma"
+    full_name = (entry.get("full_name") or "").strip()
+    parts = full_name.split(maxsplit=1)
+    first_name = parts[0] if parts else ""
+    last_name = parts[1] if len(parts) > 1 else ""
+
+    dim_scores = entry.get("dimension_scores") or {}
+    company_data = entry.get("company_data") or {}
+
+    # Format ICP match as readable text
+    icp_match_val = entry.get("icp_match")
+    if icp_match_val is True:
+        icp_text = "Yes"
+    elif icp_match_val is False:
+        icp_text = "No"
+    else:
+        icp_text = "Review"
+
+    properties = {
+        # Standard HubSpot contact fields
+        "firstname": first_name,
+        "lastname":  last_name,
+        "jobtitle":  entry.get("designation") or "",
+        "company":   entry.get("company_name") or "",
+        "phone":     entry.get("contact_number") or "",
+
+        # Assessment results
+        "assessment_total_score":          entry.get("total_score"),
+        "assessment_zone":                 entry.get("zone"),
+        "assessment_icp_match":            icp_text,
+        "assessment_weakest_dimension":    entry.get("weakest_dimension"),
+        "assessment_recommendation":       entry.get("key_recommendation"),
+
+        # Per-dimension scores
+        "assessment_procurement_score":    dim_scores.get("procurement_maturity"),
+        "assessment_network_score":        dim_scores.get("network_intelligence"),
+        "assessment_load_capacity_score":  dim_scores.get("load_capacity"),
+        "assessment_visibility_score":     dim_scores.get("visibility_spend"),
+        "assessment_compliance_score":     dim_scores.get("compliance_risk"),
+
+        # Company snapshot data
+        "company_revenue_cr":              company_data.get("revenue_cr"),
+        "company_dso_days":                company_data.get("dso_days"),
+        "company_dpo_days":                company_data.get("dpo_days"),
+        "company_ito_ratio":               company_data.get("ito_ratio"),
+
+        # Metadata
+        "assessment_date":                 datetime.now().strftime("%Y-%m-%d"),
+        "lead_source_custom":              "Event Booth — Scorecard",
+    }
+
+    # Strip None/empty values (HubSpot rejects some nulls)
+    properties = {k: v for k, v in properties.items() if v is not None and v != ""}
+
+    try:
+        resp = requests.post(
+            "https://api.hubapi.com/crm/v3/objects/contacts",
+            headers={
+                "Authorization": f"Bearer {HUBSPOT_ACCESS_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            json={"properties": properties},
+            timeout=10,
+        )
+        if resp.status_code in (200, 201):
+            return {"status": "created", "id": resp.json().get("id")}
+        if resp.status_code == 409:
+            return {"status": "duplicate", "detail": resp.json()}
+        return {"status": "error", "code": resp.status_code, "detail": resp.text[:300]}
+    except Exception as e:
+        return {"status": "exception", "error": str(e)}
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 @app.get("/api/company")
@@ -564,14 +627,11 @@ async def lookup_company(name: str = Query(..., min_length=1)):
     if cache_key in company_cache:
         return company_cache[cache_key]
 
-    # Try Screener first (listed companies)
     result = _try_screener(name.strip())
 
-    # Fallback to Tofler Pro (unlisted companies)
     if result is None or not result.get("found"):
         result = await _try_tofler(name.strip())
 
-    # Not found anywhere
     if result is None or not result.get("found"):
         result = {
             "found": False,
@@ -588,7 +648,6 @@ async def lookup_company(name: str = Query(..., min_length=1)):
     else:
         result["icp_match"] = _compute_icp(result)
 
-    # Cache
     company_cache[cache_key] = result
     _save_cache()
 
@@ -596,8 +655,7 @@ async def lookup_company(name: str = Query(..., min_length=1)):
 
 
 # ---------------------------------------------------------------------------
-# Lightweight /company-snapshot endpoint (for Company Snapshot card)
-# Returns only the 4 fields needed by the frontend card, with mock fallback.
+# Lightweight /company-snapshot endpoint
 # ---------------------------------------------------------------------------
 _MOCK_SNAPSHOTS = {
     "tata steel":      {"revenue_cr": 243353, "dso_days": 28, "dpo_days": 95, "ito_ratio": 4.8},
@@ -605,20 +663,25 @@ _MOCK_SNAPSHOTS = {
     "hul":             {"revenue_cr":  62707, "dso_days": 14, "dpo_days": 76, "ito_ratio": 13.1},
     "thermax":         {"revenue_cr":   9323, "dso_days": 92, "dpo_days": 84, "ito_ratio": 5.6},
     "atul":            {"revenue_cr":   4908, "dso_days": 71, "dpo_days": 62, "ito_ratio": 4.3},
-    "infosys":         {"revenue_cr": 153670, "dso_days": 71, "dpo_days": 20, "ito_ratio": None},
+    "infosys":         {"revenue_cr": 153670, "dso_days": 71, "dpo_days": 20, "ito_ratio": 8.5},
     "mahindra":        {"revenue_cr": 138279, "dso_days": 32, "dpo_days": 68, "ito_ratio": 11.5},
     "asian paints":    {"revenue_cr":  35495, "dso_days": 28, "dpo_days": 54, "ito_ratio": 5.1},
 }
 
 
+def _ensure_ito(snapshot: dict) -> dict:
+    """If ito_ratio is missing, fall back to a sector-agnostic default (~6x, manufacturing median)."""
+    if snapshot.get("ito_ratio") is None:
+        snapshot["ito_ratio"] = 6.0
+    return snapshot
+
+
 def _mock_snapshot(name: str) -> dict:
     """Return mock data for a company (used when upstream lookup fails/is unavailable)."""
     key = name.strip().lower()
-    # Exact-ish match against mock dict
     for k, v in _MOCK_SNAPSHOTS.items():
         if k in key or key in k:
-            return {"company_name": name.strip(), **v, "source": "mock"}
-    # Generic fallback — deterministic-looking numbers derived from name length
+            return _ensure_ito({"company_name": name.strip(), **v, "source": "mock"})
     seed = sum(ord(c) for c in key) or 1
     return {
         "company_name": name.strip(),
@@ -632,27 +695,21 @@ def _mock_snapshot(name: str) -> dict:
 
 @app.get("/company-snapshot")
 async def company_snapshot(name: str = Query(..., min_length=1)):
-    """
-    Lightweight endpoint for the Company Snapshot card on the intro form.
-    Returns { company_name, revenue_cr, dso_days, dpo_days, ito_ratio }.
-    Falls back to mock data if live scraping fails.
-    """
+    """Lightweight endpoint for the Company Snapshot card."""
     cache_key = name.strip().lower()
 
-    # Reuse main cache if present
     if cache_key in company_cache:
         c = company_cache[cache_key]
         if c.get("found"):
-            return {
+            return _ensure_ito({
                 "company_name": c.get("company_name", name),
                 "revenue_cr":   c.get("revenue_cr"),
                 "dso_days":     c.get("dso_days"),
                 "dpo_days":     c.get("dpo_days"),
                 "ito_ratio":    c.get("ito_ratio"),
                 "source":       c.get("source", "cache"),
-            }
+            })
 
-    # Try live lookup (Screener → Tofler)
     try:
         result = _try_screener(name.strip())
         if result is None or not result.get("found"):
@@ -662,16 +719,15 @@ async def company_snapshot(name: str = Query(..., min_length=1)):
         result = None
 
     if result and result.get("found"):
-        return {
+        return _ensure_ito({
             "company_name": result.get("company_name", name),
             "revenue_cr":   result.get("revenue_cr"),
             "dso_days":     result.get("dso_days"),
             "dpo_days":     result.get("dpo_days"),
             "ito_ratio":    result.get("ito_ratio"),
             "source":       result.get("source", "live"),
-        }
+        })
 
-    # Mock fallback
     return _mock_snapshot(name)
 
 
@@ -696,11 +752,11 @@ SUBMISSIONS_FILE = Path(__file__).parent / "submissions.json"
 
 @app.post("/api/submit")
 def submit_assessment(payload: AssessmentPayload):
-    """Save assessment result locally as backup."""
+    """Save assessment result locally, then push lead to HubSpot."""
     entry = payload.dict()
     entry["submitted_at"] = datetime.now().isoformat()
 
-    # Append to local file
+    # Append to local file (backup)
     submissions = []
     if SUBMISSIONS_FILE.exists():
         try:
@@ -711,7 +767,11 @@ def submit_assessment(payload: AssessmentPayload):
     submissions.append(entry)
     SUBMISSIONS_FILE.write_text(json.dumps(submissions, indent=2, default=str))
 
-    return {"status": "saved", "count": len(submissions)}
+    # Push to HubSpot
+    hubspot_result = _send_to_hubspot(entry)
+    print(f"[hubspot] {hubspot_result}")
+
+    return {"status": "saved", "count": len(submissions), "hubspot": hubspot_result}
 
 
 # Serve frontend

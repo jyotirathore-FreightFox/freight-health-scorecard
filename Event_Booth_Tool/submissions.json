@@ -198,5 +198,255 @@
       "layer3": 21.634615384615387
     },
     "submitted_at": "2026-04-20T18:17:06.233486"
+  },
+  {
+    "full_name": "Jyoti Rathore",
+    "designation": "frontend development",
+    "company_name": "celebal technologies",
+    "contact_number": "1234567890",
+    "total_score": 81.0,
+    "zone": "Algorithmic-Ready",
+    "icp_match": true,
+    "dimension_scores": {
+      "procurement_maturity": 10,
+      "network_intelligence": 15,
+      "load_capacity": 11.7,
+      "visibility_spend": 20,
+      "compliance_risk": 20
+    },
+    "weakest_dimension": "Procurement Maturity",
+    "key_recommendation": "Move from ad-hoc quoting to structured rate benchmarking and contract coverage.",
+    "company_data": {
+      "found": true,
+      "sector": null,
+      "icp_match": null,
+      "company_name": "celebal technologies",
+      "revenue_cr": 4536,
+      "dso_days": 78,
+      "dpo_days": 64,
+      "ito_ratio": 7.8,
+      "source": "mock"
+    },
+    "answers": {
+      "0": 0,
+      "1": 1,
+      "2": 2,
+      "3": 2,
+      "4": 2,
+      "5": 2,
+      "6": 1,
+      "7": 1,
+      "8": 2,
+      "9": 3,
+      "10": 3,
+      "11": 3,
+      "12": 3
+    },
+    "layer_scores": {
+      "layer1": 40,
+      "layer2": 23,
+      "layer3": 18.269230769230766
+    },
+    "submitted_at": "2026-04-21T13:33:27.184479"
+  },
+  {
+    "full_name": "Jyoti Rathore",
+    "designation": "frontend development",
+    "company_name": "tata steel",
+    "contact_number": "1234567890",
+    "total_score": 81.0,
+    "zone": "Algorithmic-Ready",
+    "icp_match": true,
+    "dimension_scores": {
+      "procurement_maturity": 11.7,
+      "network_intelligence": 15,
+      "load_capacity": 13.3,
+      "visibility_spend": 10,
+      "compliance_risk": 17.5
+    },
+    "weakest_dimension": "Visibility & Spend Control",
+    "key_recommendation": "Invest in real-time tracking and automated spend reporting.",
+    "company_data": {
+      "found": true,
+      "sector": null,
+      "icp_match": null,
+      "company_name": "Tata Steel Ltd",
+      "revenue_cr": 225088,
+      "dso_days": 9,
+      "dpo_days": 113,
+      "ito_ratio": null,
+      "source": "screener"
+    },
+    "answers": {
+      "0": 2,
+      "1": 1,
+      "2": 1,
+      "3": 2,
+      "4": 2,
+      "5": 2,
+      "6": 2,
+      "7": 1,
+      "8": 2,
+      "9": 1,
+      "10": 1,
+      "11": 2,
+      "12": 3
+    },
+    "layer_scores": {
+      "layer1": 40,
+      "layer2": 24,
+      "layer3": 16.826923076923077
+    },
+    "submitted_at": "2026-04-21T15:03:21.984835"
+  },
+  {
+    "full_name": "Jyoti Rathore",
+    "designation": "frontend development",
+    "company_name": "coromandel",
+    "contact_number": "1234567890",
+    "total_score": 94.0,
+    "zone": "Algorithmic-Ready",
+    "icp_match": true,
+    "dimension_scores": {
+      "procurement_maturity": 16.7,
+      "network_intelligence": 15,
+      "load_capacity": 20,
+      "visibility_spend": 20,
+      "compliance_risk": 20
+    },
+    "weakest_dimension": "Network Intelligence",
+    "key_recommendation": "Classify your lanes and build visibility into rate variance across your network.",
+    "company_data": {
+      "found": true,
+      "sector": null,
+      "icp_match": null,
+      "company_name": "Coromandel International Ltd",
+      "revenue_cr": 30464,
+      "dso_days": 19,
+      "dpo_days": 123,
+      "ito_ratio": 6,
+      "source": "screener"
+    },
+    "answers": {
+      "0": 1,
+      "1": 3,
+      "2": 3,
+      "3": 1,
+      "4": 3,
+      "5": 2,
+      "6": 3,
+      "7": 3,
+      "8": 3,
+      "9": 3,
+      "10": 3,
+      "11": 3,
+      "12": 3
+    },
+    "layer_scores": {
+      "layer1": 40,
+      "layer2": 31,
+      "layer3": 22.596153846153847
+    },
+    "submitted_at": "2026-04-21T15:14:28.563843"
+  },
+  {
+    "full_name": "Test",
+    "designation": "Test",
+    "company_name": "coromandel",
+    "contact_number": "1234567890",
+    "total_score": 94.0,
+    "zone": "Algorithmic-Ready",
+    "icp_match": true,
+    "dimension_scores": {
+      "procurement_maturity": 15,
+      "network_intelligence": 18.3,
+      "load_capacity": 18.3,
+      "visibility_spend": 20,
+      "compliance_risk": 20
+    },
+    "weakest_dimension": "Procurement Maturity",
+    "key_recommendation": "Move from ad-hoc quoting to structured rate benchmarking and contract coverage.",
+    "company_data": {
+      "found": true,
+      "sector": null,
+      "icp_match": null,
+      "company_name": "Coromandel International Ltd",
+      "revenue_cr": 30464,
+      "dso_days": 19,
+      "dpo_days": 123,
+      "ito_ratio": 6,
+      "source": "screener"
+    },
+    "answers": {
+      "0": 1,
+      "1": 3,
+      "2": 2,
+      "3": 2,
+      "4": 3,
+      "5": 3,
+      "6": 2,
+      "7": 3,
+      "8": 3,
+      "9": 3,
+      "10": 3,
+      "11": 3,
+      "12": 3
+    },
+    "layer_scores": {
+      "layer1": 40,
+      "layer2": 31,
+      "layer3": 22.596153846153847
+    },
+    "submitted_at": "2026-04-21T15:45:54.930426"
+  },
+  {
+    "full_name": "Test",
+    "designation": "Test",
+    "company_name": "coromandel",
+    "contact_number": "1234567890",
+    "total_score": 96.0,
+    "zone": "Algorithmic-Ready",
+    "icp_match": true,
+    "dimension_scores": {
+      "procurement_maturity": 20,
+      "network_intelligence": 20,
+      "load_capacity": 20,
+      "visibility_spend": 20,
+      "compliance_risk": 20
+    },
+    "weakest_dimension": "Procurement Maturity",
+    "key_recommendation": "Move from ad-hoc quoting to structured rate benchmarking and contract coverage.",
+    "company_data": {
+      "found": true,
+      "sector": null,
+      "icp_match": null,
+      "company_name": "Coromandel International Ltd",
+      "revenue_cr": 30464,
+      "dso_days": 19,
+      "dpo_days": 123,
+      "ito_ratio": 6,
+      "source": "screener"
+    },
+    "answers": {
+      "0": 3,
+      "1": 3,
+      "2": 3,
+      "3": 3,
+      "4": 3,
+      "5": 3,
+      "6": 3,
+      "7": 3,
+      "8": 3,
+      "9": 3,
+      "10": 3,
+      "11": 3,
+      "12": 3
+    },
+    "layer_scores": {
+      "layer1": 40,
+      "layer2": 31,
+      "layer3": 25
+    },
+    "submitted_at": "2026-04-21T15:48:47.126929"
   }
 ]
