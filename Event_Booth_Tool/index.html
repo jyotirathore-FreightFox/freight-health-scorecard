@@ -1839,19 +1839,38 @@
     }
 
     // ========== START OVER ==========
+    // ========== START OVER (FIXED) ==========
     function startOver() {
+      // Reset state
       companyData = null;
       currentQ = 0;
       answers = {};
+
+      // Clear form fields
       document.getElementById('f-name').value = '';
       document.getElementById('f-email').value = '';
       document.getElementById('f-designation').value = '';
       document.getElementById('f-company').value = '';
       document.getElementById('f-phone').value = '';
-      document.getElementById('company-card').classList.remove('visible');
-      document.getElementById('icp-badge-container').innerHTML = '';
+
+      // Reset company card (guard: element always exists now)
+      const card = document.getElementById('company-card');
+      if (card) card.classList.remove('visible', 'loading');
+
+      const loading = document.getElementById('company-loading');
+      if (loading) loading.classList.remove('visible');
+
+      // Reset ICP badge (guard: element now exists in DOM)
+      const badgeContainer = document.getElementById('icp-badge-container');
+      if (badgeContainer) badgeContainer.innerHTML = '';
+
+      // Reset reward card
+      const reward = document.getElementById('r-reward');
+      if (reward) reward.classList.remove('visible');
+
+      // Go back to intro screen
       showScreen('intro');
-    }
+    }  
   </script>
 </body>
 

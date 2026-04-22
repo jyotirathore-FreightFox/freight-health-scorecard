@@ -1,0 +1,11 @@
+{
+  "_instructions": "Add companies here (lowercase key = company name or partial name). This file is checked first and overrides Screener/Tofler. Delete this _instructions key before adding real data.",
+  "example company": {
+    "company_name": "Example Company Pvt Ltd",
+    "revenue_cr": 1500,
+    "dso_days": 45,
+    "dpo_days": 60,
+    "ito_ratio": 5.0,
+    "sector": "Manufacturing"
+  }
+}
